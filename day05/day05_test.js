@@ -19,20 +19,11 @@ function mergeRanges(ranges) {
   return out;
 }
 
-function countFresh(ids, ranges) {
+function countFresh(ranges) {
   const merged = mergeRanges(ranges);
   let count = 0;
-  for (const id of ids) {
-    let lo = 0, hi = merged.length - 1;
-    let found = false;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      const [l, r] = merged[mid];
-      if (id < l) hi = mid - 1;
-      else if (id > r) lo = mid + 1;
-      else { found = true; break; }
-    }
-    if (found) count++;
+  for (const [l, r] of merged) {
+    count += r - l + 1;
   }
   return count;
 }
@@ -40,11 +31,9 @@ function countFresh(ids, ranges) {
 function solve(input) {
   const parts = input.split(/\r?\n\s*\r?\n/);
   const rangesPart = parts[0] || '';
-  const idsPart = parts[1] || '';
 
   const ranges = rangesPart.split(/\r?\n/).map(s => s.trim()).filter(Boolean).map(parseRange);
-  const ids = idsPart.split(/\r?\n/).map(s => s.trim()).filter(Boolean).map(s => parseInt(s, 10));
-  return countFresh(ids, ranges);
+  return countFresh(ranges);
 }
 
 const inputPath = process.argv[2] || './day05/input05.txt';

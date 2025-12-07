@@ -3,43 +3,60 @@ const fs = require('fs');
 function solve(input) {
   const rawLines = input.replace(/\r/g, '').split('\n');
   if (rawLines.length > 0 && rawLines[rawLines.length - 1].length === 0) rawLines.pop();
+
   const maxLen = rawLines.reduce((m, r) => Math.max(m, r.length), 0);
   const rows = rawLines.map(r => r + ' '.repeat(maxLen - r.length));
 
-  const sep = new Array(maxLen);
-  for (let c = 0; c < maxLen; c++) {
-    let allSpace = true;
-    for (let rr = 0; rr < rows.length; rr++) {
-      if (rows[rr][c] !== ' ') { allSpace = false; break; }
-    }
-    sep[c] = allSpace;
-  }
-
-  const segments = [];
-  let i = 0;
-  while (i < maxLen) {
-    while (i < maxLen && sep[i]) i++;
-    if (i >= maxLen) break;
-    const start = i;
-    while (i < maxLen && !sep[i]) i++;
-    const end = i - 1;
-    segments.push([start, end]);
-  }
-
   let grandTotal = 0n;
-  for (const [l, r] of segments) {
-    const entries = [];
-    for (const row of rows) {
-      const piece = row.slice(l, r + 1).trim();
-      if (piece.length > 0) entries.push(piece);
+  let currentProblem = [];
+  let problemOperator = '';
+
+  // Process columns RIGHT-TO-LEFT
+  for (let c = maxLen - 1; c >= 0; c--) {
+    let column = '';
+    for (let r = 0; r < rows.length; r++) {
+      column += rows[r][c];
     }
-    if (entries.length === 0) continue;
-    const op = entries[entries.length - 1].trim();
-    const numStrs = entries.slice(0, -1);
-    const nums = numStrs.map(s => BigInt(s.replace(/\s+/g, '')));
+
+    const isSeparator = column.trim().length === 0;
+
+    if (isSeparator) {
+      if (currentProblem.length > 0 && problemOperator) {
+        const nums = currentProblem.map(val => BigInt(val));
+        let value = 0n;
+        if (problemOperator === '+') {
+          value = nums.reduce((a, b) => a + b, 0n);
+        } else {
+          value = nums.reduce((a, b) => a * b, 1n);
+        }
+        grandTotal += value;
+        currentProblem = [];
+        problemOperator = '';
+      }
+    } else {
+      const colLines = column.split('');
+      const lastLine = colLines[colLines.length - 1].trim();
+      const numberParts = colLines.slice(0, -1).map(c => c.trim()).filter(Boolean);
+
+      if (lastLine === '+' || lastLine === '*') {
+        problemOperator = lastLine;
+      }
+
+      if (numberParts.length > 0) {
+        const numStr = numberParts.join('');
+        currentProblem.push(numStr);
+      }
+    }
+  }
+
+  if (currentProblem.length > 0 && problemOperator) {
+    const nums = currentProblem.map(val => BigInt(val));
     let value = 0n;
-    if (op.includes('+')) value = nums.reduce((a, b) => a + b, 0n);
-    else value = nums.reduce((a, b) => a * b, 1n);
+    if (problemOperator === '+') {
+      value = nums.reduce((a, b) => a + b, 0n);
+    } else {
+      value = nums.reduce((a, b) => a * b, 1n);
+    }
     grandTotal += value;
   }
 
