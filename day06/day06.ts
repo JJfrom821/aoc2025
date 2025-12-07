@@ -1,55 +1,71 @@
 import * as fs from 'fs';
 
 /**
- * Parse the worksheet arranged horizontally into vertical problems.
- * Problems are separated by a full column of spaces. Within a problem,
- * the bottom non-empty line is the operator ("+" or "*") and the
- * preceding non-empty lines are the numbers (top -> bottom).
+ * Parse the worksheet arranged horizontally into vertical columns.
+ * Read columns RIGHT-TO-LEFT, each column forms one number.
+ * The bottom element of each column is the operator.
+ * Columns with only spaces are separators between problems.
  */
 export function solve(input: string): bigint {
   const rawLines = input.replace(/\r/g, '').split('\n');
-  // Remove any trailing empty line
   if (rawLines.length > 0 && rawLines[rawLines.length - 1].length === 0) rawLines.pop();
 
   const maxLen = rawLines.reduce((m, r) => Math.max(m, r.length), 0);
   const rows = rawLines.map(r => r + ' '.repeat(maxLen - r.length));
 
-  // Determine separator columns (columns that are all spaces)
-  const sep: boolean[] = new Array(maxLen);
-  for (let c = 0; c < maxLen; c++) {
-    let allSpace = true;
-    for (let r = 0; r < rows.length; r++) {
-      if (rows[r][c] !== ' ') { allSpace = false; break; }
-    }
-    sep[c] = allSpace;
-  }
-
-  // Collect contiguous non-separator column segments as problems
-  const segments: Array<[number, number]> = [];
-  let i = 0;
-  while (i < maxLen) {
-    while (i < maxLen && sep[i]) i++;
-    if (i >= maxLen) break;
-    const start = i;
-    while (i < maxLen && !sep[i]) i++;
-    const end = i - 1;
-    segments.push([start, end]);
-  }
-
   let grandTotal = 0n;
-  for (const [l, r] of segments) {
-    // Collect non-empty trimmed lines inside this segment (top to bottom)
-    const entries: string[] = [];
-    for (const row of rows) {
-      const piece = row.slice(l, r + 1).trim();
-      if (piece.length > 0) entries.push(piece);
+  let currentProblem: Array<[string, string]> = []; // [value, type] pairs
+  let problemOperator = '';
+
+  // Process columns RIGHT-TO-LEFT
+  for (let c = maxLen - 1; c >= 0; c--) {
+    // Extract column
+    let column = '';
+    for (let r = 0; r < rows.length; r++) {
+      column += rows[r][c];
     }
-    if (entries.length === 0) continue;
-    const op = entries[entries.length - 1].trim();
-    const numStrs = entries.slice(0, -1);
-    const nums = numStrs.map(s => BigInt(s.replace(/\s+/g, '')));
+
+    // Check if column is all spaces (separator)
+    const isSeparator = column.trim().length === 0;
+
+    if (isSeparator) {
+      // End current problem if it exists
+      if (currentProblem.length > 0 && problemOperator) {
+        // Process the accumulated problem
+        const nums = currentProblem.map(([val]) => BigInt(val));
+        let value = 0n;
+        if (problemOperator === '+') {
+          value = nums.reduce((a, b) => a + b, 0n);
+        } else {
+          value = nums.reduce((a, b) => a * b, 1n);
+        }
+        grandTotal += value;
+        currentProblem = [];
+        problemOperator = '';
+      }
+    } else {
+      // Parse column (top-to-bottom): last element is operator, rest are number parts
+      const colLines = column.split('');
+      const lastLine = colLines[colLines.length - 1].trim();
+      const numberParts = colLines.slice(0, -1).map(c => c.trim()).filter(Boolean);
+
+      if (lastLine === '+' || lastLine === '*') {
+        problemOperator = lastLine;
+      }
+
+      if (numberParts.length > 0) {
+        // Join digit by digit from top to bottom
+        const numStr = numberParts.join('');
+        currentProblem.push([numStr, 'number']);
+      }
+    }
+  }
+
+  // Process final problem if exists
+  if (currentProblem.length > 0 && problemOperator) {
+    const nums = currentProblem.map(([val]) => BigInt(val));
     let value = 0n;
-    if (op.includes('+')) {
+    if (problemOperator === '+') {
       value = nums.reduce((a, b) => a + b, 0n);
     } else {
       value = nums.reduce((a, b) => a * b, 1n);

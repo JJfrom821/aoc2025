@@ -1,29 +1,51 @@
 import * as fs from 'fs';
 
-export function maxJoltageFromBank(line: string): number {
+/**
+ * Select exactly 12 digits from a bank to form the largest possible number.
+ * Greedy: for each digit position in the result, choose the largest digit
+ * from the remaining available positions that still leaves enough digits after it.
+ */
+export function maxJoltageFromBank(line: string): bigint {
   const s = line.trim();
-  if (s.length < 2) return 0;
   const n = s.length;
-  const digits: number[] = new Array(n);
-  for (let i = 0; i < n; i++) digits[i] = s.charCodeAt(i) - 48; // '0' -> 48
+  const needToSelect = 12;
 
-  const suffixMax: number[] = new Array(n);
-  suffixMax[n - 1] = digits[n - 1];
-  for (let i = n - 2; i >= 0; i--) suffixMax[i] = Math.max(digits[i], suffixMax[i + 1]);
+  // Must have at least 12 digits
+  if (n < needToSelect) return 0n;
 
-  let best = 0;
-  for (let i = 0; i < n - 1; i++) {
-    const tens = digits[i];
-    const bestOnes = suffixMax[i + 1];
-    const candidate = tens * 10 + bestOnes;
-    if (candidate > best) best = candidate;
+  const digits = s.split('').map(c => parseInt(c, 10));
+  const selected: number[] = [];
+  let pos = 0;
+
+  for (let i = 0; i < needToSelect; i++) {
+    // How many more digits do we need to select (including this one)?
+    const stillNeed = needToSelect - i;
+    // Range of positions from current to last valid position
+    // We need at least 'stillNeed' positions remaining (including current)
+    const maxPos = n - stillNeed;
+
+    // Find the largest digit in range [pos, maxPos]
+    let maxDigit = -1;
+    let maxIdx = pos;
+    for (let j = pos; j <= maxPos; j++) {
+      if (digits[j] > maxDigit) {
+        maxDigit = digits[j];
+        maxIdx = j;
+      }
+    }
+
+    selected.push(maxDigit);
+    pos = maxIdx + 1; // Move past the selected digit for next iteration
   }
-  return best;
+
+  // Convert selected digits to a bigint
+  const result = selected.reduce((acc, digit) => acc * 10n + BigInt(digit), 0n);
+  return result;
 }
 
-export function solve(input: string): number {
+export function solve(input: string): bigint {
   const lines = input.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  let total = 0;
+  let total = 0n;
   for (const line of lines) {
     total += maxJoltageFromBank(line);
   }
@@ -53,7 +75,7 @@ async function runIfMain() {
     console.error('Failed to read input:', e instanceof Error ? e.message : e);
     process.exit(1);
   }
-  console.log(solve(input));
+  console.log(solve(input).toString());
 }
 
 runIfMain();

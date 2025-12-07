@@ -1,18 +1,28 @@
 /**
  * Checks if a number is an invalid ID.
  * An invalid ID is a number where the string representation
- * is exactly a pattern repeated twice (e.g., 55, 6464, 123123).
+ * is some pattern repeated at least twice.
+ * Examples: 55 (5 twice), 123123 (123 twice), 1111111 (1 seven times), 1212121212 (12 five times).
  */
 function isInvalidID(num) {
   const str = num.toString();
   const len = str.length;
 
-  // Must be even length and at least 2 characters
-  if (len < 2 || len % 2 !== 0) return false;
+  // Try all possible pattern lengths that divide the string length
+  for (let patternLen = 1; patternLen <= len / 2; patternLen++) {
+    // Pattern length must divide string length evenly
+    if (len % patternLen !== 0) continue;
 
-  // Check if first half equals second half
-  const half = len / 2;
-  return str.substring(0, half) === str.substring(half);
+    const pattern = str.substring(0, patternLen);
+    const repetitions = len / patternLen;
+
+    // Check if the string is the pattern repeated 'repetitions' times
+    if (pattern.repeat(repetitions) === str) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**

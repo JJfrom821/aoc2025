@@ -32,23 +32,13 @@ export function mergeRanges(ranges: Array<[number, number]>): Array<[number, num
 }
 
 /**
- * Count how many ids fall into any of the given ranges.
+ * Count total number of unique IDs covered by all ranges.
  */
-export function countFresh(ids: number[], ranges: Array<[number, number]>): number {
+export function countFresh(ranges: Array<[number, number]>): number {
 	const merged = mergeRanges(ranges);
 	let count = 0;
-	for (const id of ids) {
-		// binary search over merged ranges
-		let lo = 0, hi = merged.length - 1;
-		let found = false;
-		while (lo <= hi) {
-			const mid = (lo + hi) >> 1;
-			const [l, r] = merged[mid];
-			if (id < l) hi = mid - 1;
-			else if (id > r) lo = mid + 1;
-			else { found = true; break; }
-		}
-		if (found) count++;
+	for (const [l, r] of merged) {
+		count += r - l + 1; // inclusive range
 	}
 	return count;
 }
@@ -60,7 +50,6 @@ export function solve(input: string): number {
 	// split into two sections separated by a blank line
 	const parts = input.split(/\r?\n\s*\r?\n/);
 	const rangesPart = parts[0] ?? '';
-	const idsPart = parts[1] ?? '';
 
 	const ranges: Array<[number, number]> = rangesPart
 		.split(/\r?\n/)
@@ -68,13 +57,7 @@ export function solve(input: string): number {
 		.filter(Boolean)
 		.map(parseRange);
 
-	const ids: number[] = idsPart
-		.split(/\r?\n/)
-		.map(s => s.trim())
-		.filter(Boolean)
-		.map(s => parseInt(s, 10));
-
-	return countFresh(ids, ranges);
+	return countFresh(ranges);
 }
 
 // If executed directly, read `input05.txt` in the same directory and print result
