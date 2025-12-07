@@ -55,7 +55,13 @@ for day in day*/day*_test.js; do echo "Testing $day:"; node "$day"; done
 
 - [x] Day 1: Dial Rotation
 - [x] Day 2: Invalid ID Detection
-- [ ] Day 3 - 25: Coming soon...
+- [x] Day 3: Two-digit bank maximization
+- [x] Day 4: Accessible '@' count
+- [x] Day 5: Fresh ingredient ID counting
+- [x] Day 6: Cephalopod column arithmetic
+- [ ] Day 7 - 25: Coming soon...
+
+- **Test runners:** JS test runners exist for Days 1–6 and print the computed answers from the corresponding `inputXX.txt` files.
 
 ## 💡 Notes
 
